@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log job</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf8f4;
+    --ink:#1c1a17;
+    --muted:#6f6a61;
+    --rule:#e0dbd1;
+    --gold:#b8860b;
+    --gold-soft:#f3e9cf;
+    --green:#3f6b4a;
+    --red:#8c3a2e;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:32px 20px 56px;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Lato',-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    display:flex;
+    justify-content:center;
+  }
+  .sheet{width:100%;max-width:440px}
+  h1{
+    font-family:'Playfair Display',Georgia,serif;
+    font-weight:600;
+    font-size:27px;
+    margin:0 0 2px;
+    letter-spacing:-.01em;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:13px;
+    margin:0 0 22px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--rule);
+  }
+  label{
+    display:block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 6px;
+  }
+  .field{margin-bottom:18px}
+  input[type=text],select{
+    width:100%;
+    font-family:inherit;
+    font-size:15px;
+    color:var(--ink);
+    background:#fff;
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:10px 11px;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  select{
+    background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%236f6a61' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    background-size:11px;
+    padding-right:32px;
+  }
+  input:focus,select:focus{
+    outline:none;
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px var(--gold-soft);
+  }
+  .link-row{
+    font-size:12px;
+    color:var(--muted);
+    word-break:break-all;
+    background:#fff;
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:9px 11px;
+    margin-bottom:22px;
+  }
+  .link-row.empty{color:var(--red)}
+  button{
+    width:100%;
+    font-family:inherit;
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:.02em;
+    color:#fff;
+    background:var(--gold);
+    border:none;
+    border-radius:3px;
+    padding:13px;
+    cursor:pointer;
+  }
+  button:hover{background:#a2760a}
+  button:disabled{background:#c9c3b7;cursor:default}
+  button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .result{
+    margin-top:18px;
+    font-size:14px;
+    text-align:center;
+    min-height:20px;
+  }
+  .ok{color:var(--green);font-weight:700}
+  .bad{color:var(--red);font-weight:700}
+  .hint{
+    margin-top:26px;
+    padding-top:14px;
+    border-top:1px solid var(--rule);
+    font-size:12px;
+    color:var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>Log job</h1>
+  <p class="sub">Writes one row to the tracker.</p>
+
+  <div class="field">
+    <label for="company">Company</label>
+    <input type="text" id="company" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <label for="position">Position</label>
+    <input type="text" id="position" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <label for="category">Category</label>
+    <select id="category">
+      <option>Internship</option>
+      <option>Werkstudent</option>
+      <option>Part-Time</option>
+      <option>Full-Time</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status">
+      <option>Applied</option>
+      <option>Not Applied</option>
+      <option>Waiting Feedback</option>
+      <option>Interview</option>
+      <option>Offer</option>
+      <option>Rejected</option>
+    </select>
+  </div>
+
+  <label>Job ad link</label>
+  <div class="link-row" id="linkRow"></div>
+
+  <button id="save">Save to tracker</button>
+  <div class="result" id="result"></div>
+
+  <p class="hint">Opened without a job page, so the link is empty. Use the Log job bookmark from a posting to fill it.</p>
+</div>
+
+<script>
+(function(){
+  var ENDPOINT = "https://script.google.com/macros/s/AKfycby0QizmpPEHtgFNcFSfScDM36SNtSfIauA9hVR4LTMq2HQp0S8EHS60-hC7mr5qEenjsw/exec";
+  var TOKEN = "LOGJOB";
+
+  var q = new URLSearchParams(location.search);
+  var link = q.get("link") || "";
+
+  var companyEl = document.getElementById("company");
+  var positionEl = document.getElementById("position");
+  var categoryEl = document.getElementById("category");
+  var statusEl = document.getElementById("status");
+  var linkRow = document.getElementById("linkRow");
+  var btn = document.getElementById("save");
+  var result = document.getElementById("result");
+  var hint = document.querySelector(".hint");
+
+  companyEl.value = q.get("company") || "";
+  positionEl.value = q.get("position") || "";
+
+  if (link) {
+    linkRow.textContent = link;
+    hint.style.display = "none";
+  } else {
+    linkRow.textContent = "No link";
+    linkRow.className = "link-row empty";
+  }
+
+  function send() {
+    if (!companyEl.value.trim()) {
+      result.className = "result bad";
+      result.textContent = "Company is empty.";
+      companyEl.focus();
+      return;
+    }
+
+    btn.disabled = true;
+    result.className = "result";
+    result.textContent = "Saving…";
+
+    var url = ENDPOINT
+      + "?token=" + encodeURIComponent(TOKEN)
+      + "&company=" + encodeURIComponent(companyEl.value.trim())
+      + "&position=" + encodeURIComponent(positionEl.value.trim())
+      + "&category=" + encodeURIComponent(categoryEl.value)
+      + "&link=" + encodeURIComponent(link)
+      + "&status=" + encodeURIComponent(statusEl.value);
+
+    fetch(url)
+      .then(function(r){ return r.text(); })
+      .then(function(text){
+        result.className = "result ok";
+        result.textContent = text.indexOf("Added") === 0 ? text : "Saved.";
+        btn.textContent = "Save another";
+        btn.disabled = false;
+      })
+      .catch(function(){
+        // Cross-origin read blocked. Fire it blind so the row still lands.
+        fetch(url, {mode:"no-cors"}).then(function(){
+          result.className = "result ok";
+          result.textContent = "Sent. Check the sheet.";
+          btn.disabled = false;
+        }).catch(function(){
+          result.className = "result bad";
+          result.textContent = "Did not send. Check your connection and try again.";
+          btn.disabled = false;
+        });
+      });
+  }
+
+  btn.addEventListener("click", send);
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Enter") { e.preventDefault(); send(); }
+  });
+
+  (companyEl.value ? positionEl : companyEl).focus();
+})();
+</script>
+</body>
+</html>
